@@ -26,7 +26,10 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Phone</label>
-                        <input type="text" class="form-control" name="phone" value="{{ user.phone or '' }}">
+                        <input type="tel" class="form-control" name="phone" value="{{ user.phone or '' }}"
+                               pattern="[0-9]{10}" maxlength="10" placeholder="Enter 10-digit mobile number"
+                               title="Phone number must be exactly 10 digits">
+                        <div class="form-text">Enter your 10-digit mobile number</div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Organization (if NGO)</label>
@@ -63,6 +66,7 @@
                     <div class="mb-3">
                         <label class="form-label">New Password</label>
                         <input type="password" class="form-control" name="new_password" required>
+                        <div class="form-text">Must be at least 8 characters and include uppercase, lowercase, number, and special character.</div>
                     </div>
                 </div>
                 <div class="modal-footer">
