@@ -142,7 +142,7 @@
          data-claim-id="{{ claim.id }}"
          data-expiry="{{ minutes_left }}"
          data-status="{{ claim.status }}">
-        <div class="card h-100 pickup-card {% if hours_left < 2 %}urgent-pickup{% endif %}">
+        <div class="card h-100 pickup-card {% if minutes_left < 2 %}urgent-pickup{% endif %}">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span class="badge status-badge 
                     {% if claim.status == 'pending' %}bg-warning
@@ -160,7 +160,7 @@
             <div class="card-body">
                 <h5 class="card-title">{{ claim.food_listing.title }}</h5>
                 <p class="text-muted small mb-3">
-                    <i class="bi bi-building"></i> {{ claim.food_listing.donor.organization or claim.food_listing.donor.username }}
+                    <i class="bi bi-building"></i> {{ claim.food_listing.donor.donor_profile.organization if claim.food_listing.donor.donor_profile else claim.food_listing.donor.username }}
                 </p>
                 
                 <div class="mb-3">
@@ -245,7 +245,7 @@
                         <i class="bi bi-map"></i> Get Directions
                     </button>
                     
-                    <button class="btn btn-outline-warning" onclick="contactDonor({{ claim.food_listing.donor.id }})">
+                    <button type="button" class="btn btn-outline-warning" onclick="contactDonor({{ claim.food_listing.donor.id }})">
                         <i class="bi bi-telephone"></i> Contact Donor
                     </button>
                 </div>
@@ -274,7 +274,7 @@
 
 <!-- Contact Donor Modal -->
 <div class="modal fade" id="contactModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Contact Donor</h5>
@@ -371,7 +371,7 @@ function updateCountdowns() {
                 countdownElement.className = 'countdown';
                 if (timeDiff < 30 * 60 * 1000) { // Less than 30 minutes
                     countdownElement.classList.add('urgent');
-                } else if (timeDiff < 2 * 60 * 60 * 1000) { // Less than 2 hours
+                } else if (timeDiff < 2 * 60 * 1000) { // Less than 2 minutes
                     countdownElement.classList.add('warning');
                 } else {
                     countdownElement.classList.add('normal');
@@ -390,6 +390,11 @@ updateCountdowns(); // Initial call
 
 // Confirm pickup function
 function confirmPickup(claimId) {
+    if (!claimId || String(claimId).trim() === '') {
+        alert('Unable to confirm pickup: claim ID is missing. Please refresh the page and try again.');
+        console.error('Missing claimId for confirmPickup');
+        return;
+    }
     if (confirm('Are you sure you want to confirm this pickup? This will let the donor know you are coming.')) {
         fetch(`/claim/${claimId}/update_status`, {
             method: 'POST',
@@ -418,8 +423,18 @@ function confirmPickup(claimId) {
 
 // Verify OTP function
 function verifyOTP(claimId) {
+    if (!claimId || String(claimId).trim() === '') {
+        alert('Unable to verify OTP: claim ID is missing. Please refresh the page and try again.');
+        console.error('Missing claimId for verifyOTP');
+        return;
+    }
     const otpInput = document.getElementById(`otp-${claimId}`);
     const messageDiv = document.getElementById(`otp-message-${claimId}`);
+    if (!otpInput || !messageDiv) {
+        alert('OTP fields are not available. Please refresh the page and try again.');
+        console.error('Missing OTP elements for claimId', claimId);
+        return;
+    }
     const otp = otpInput.value.trim();
     
     if (!otp || otp.length !== 4 || !/^\d{4}$/.test(otp)) {
@@ -476,19 +491,27 @@ function contactDonor(donorId) {
     const modal = new bootstrap.Modal(document.getElementById('contactModal'));
     const modalBody = document.getElementById('contactModalBody');
     
-    modalBody.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
+    modalBody.innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"></div></div>';
+    modal.show();
     
     fetch(`/api/user/${donorId}/contact`)
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
+            const displayName = data.user.organization || data.user.username;
+            const phoneLine = data.user.phone ? '<i class="bi bi-telephone"></i> ' + data.user.phone + '<br>' : '<span class="text-muted">Phone not available</span><br>';
             modalBody.innerHTML = `
                 <div class="text-center">
-                    <h6>${data.user.organization || data.user.username}</h6>
+                    <h6>${displayName}</h6>
                     <p class="text-muted">Donor Contact Information</p>
                     <div class="mb-3">
                         <i class="bi bi-envelope"></i> ${data.user.email}<br>
-                        ${data.user.phone ? '<i class="bi bi-telephone"></i> ' + data.user.phone + '<br>' : ''}
+                        ${phoneLine}
                     </div>
                     <div class="alert alert-info">
                         <small>Please contact the donor to coordinate pickup details.</small>
@@ -496,7 +519,8 @@ function contactDonor(donorId) {
                 </div>
             `;
         } else {
-            modalBody.innerHTML = '<div class="text-danger">Error loading contact information.</div>';
+            const errorMessage = data.error ? data.error : 'Error loading contact information.';
+            modalBody.innerHTML = `<div class="text-danger">${errorMessage}</div>`;
         }
     })
     .catch(error => {

@@ -67,7 +67,7 @@
                             <option value="newest">Newest First</option>
                             <option value="expiring">Expiring Soon</option>
                             <option value="quantity">Most Quantity</option>
-                            {% if current_user.latitude and current_user.longitude %}
+                            {% if current_user.ngo_profile and current_user.ngo_profile.latitude and current_user.ngo_profile.longitude %}
                             <option value="distance">Nearest First</option>
                             {% endif %}
                         </select>
@@ -126,13 +126,13 @@
 <!-- Food Grid -->
 <div class="row" id="foodGrid">
     {% for listing in listings %}
-    {% set hours_left = ((listing.pickup_end - datetime.utcnow()).total_seconds() / 3600)|round|int %}
+    {% set minutes_left = ((listing.pickup_end - datetime.utcnow()).total_seconds() / 60)|round|int %}
     <div class="col-md-6 col-lg-4 mb-4 food-item" 
          data-type="{{ listing.food_type }}"
          data-quantity="{{ listing.quantity }}"
-         data-expiry="{{ hours_left }}"
+         data-expiry="{{ minutes_left }}"
          data-title="{{ listing.title|lower }}">
-        <div class="card h-100 food-card {% if hours_left < 2 %}urgent{% endif %}">
+        <div class="card h-100 food-card {% if minutes_left < 2 %}urgent{% endif %}">
             {% if listing.image %}
             <img src="{{ url_for('static', filename='uploads/' + listing.image) }}" class="card-img-top" style="height: 180px; object-fit: cover;">
             {% endif %}
@@ -141,13 +141,13 @@
                     <div>
                         <h5 class="card-title mb-1">{{ listing.title }}</h5>
                         <p class="text-muted small mb-0">
-                            <i class="bi bi-building"></i> {{ listing.donor.organization or listing.donor.username }}
+                            <i class="bi bi-building"></i> {{ listing.donor.donor_profile.organization if listing.donor.donor_profile else listing.donor.username }}
                         </p>
                     </div>
                     <div class="text-end">
                         <span class="badge bg-info">{{ listing.quantity }} meals</span>
-                        {% if hours_left < 4 %}
-                        <span class="badge badge-expiring mt-1">Expiring in {{ hours_left }}h</span>
+                        {% if minutes_left < 4 %}
+                        <span class="badge badge-expiring mt-1">Expiring in {{ minutes_left }}m</span>
                         {% endif %}
                     </div>
                 </div>
@@ -155,7 +155,7 @@
                 <div class="mb-3">
                     <p class="card-text small">
                         <i class="bi bi-geo-alt"></i> {{ listing.location }}
-                        {% if current_user.latitude and current_user.longitude and listing.latitude and listing.longitude and listing.distance %}
+                        {% if current_user.ngo_profile and current_user.ngo_profile.latitude and current_user.ngo_profile.longitude and listing.latitude and listing.longitude and listing.distance %}
                         <br><small class="text-primary"><strong>{{ "%.1f"|format(listing.distance) }} km away</strong></small>
                         {% endif %}
                         {% if listing.pickup_address %}
@@ -207,20 +207,20 @@
     <!-- Claim Modal -->
     <div class="modal fade" id="claimModal{{ listing.id }}" tabindex="-1">
         <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Claim Food</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p>You are about to claim:</p>
-                    <div class="alert alert-info">
-                        <strong>{{ listing.title }}</strong><br>
-                        {{ listing.quantity }} meals • {{ listing.food_type|title }}<br>
-                        <small>From: {{ listing.donor.organization or listing.donor.username }}</small>
+            <form method="POST" action="{{ url_for('claim_food', listing_id=listing.id ) }}" id="claimForm{{ listing.id }}">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Claim Food</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
-                    
-                    <form id="claimForm{{ listing.id }}">
+                    <div class="modal-body">
+                        <p>You are about to claim:</p>
+                        <div class="alert alert-info">
+                            <strong>{{ listing.title }}</strong><br>
+                            {{ listing.quantity }} meals • {{ listing.food_type|title }}<br>
+                            <small>From: {{ listing.donor.donor_profile.organization if listing.donor.donor_profile else listing.donor.username }}</small>
+                        </div>
+                        
                         <div class="mb-3">
                             <label class="form-label">Estimated Number of People to Serve</label>
                             <input type="number" class="form-control" name="people_served" min="1" max="10000" 
@@ -232,20 +232,18 @@
                                       placeholder="E.g., Pickup time preference, special instructions..."></textarea>
                         </div>
                         <div class="form-check mb-3">
-                            <input class="form-check-input" type="checkbox" required>
-                            <label class="form-check-label">
+                            <input class="form-check-input" type="checkbox" id="confirmCheck{{ listing.id }}" required>
+                            <label class="form-check-label" for="confirmCheck{{ listing.id }}">
                                 I confirm that we have the capacity to collect and distribute this food safely
                             </label>
                         </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <form method="POST" action="{{ url_for('claim_food', listing_id=listing.id ) }}">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-warning">Confirm Claim</button>
-                    </form>
+                    </div>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
 
@@ -276,7 +274,7 @@
                         </div>
                         <div class="col-md-6">
                             <h6>Pickup Information</h6>
-                            <p><strong>Donor:</strong> {{ listing.donor.organization or listing.donor.username }}</p>
+                            <p><strong>Donor:</strong> {{ listing.donor.donor_profile.organization if listing.donor.donor_profile else listing.donor.username }}</p>
                             <p><strong>Location:</strong> {{ listing.location }}</p>
                             <p><strong>Address:</strong> {{ listing.pickup_address or listing.location }}</p>
                             
@@ -302,8 +300,8 @@
                             <h6>Contact Information</h6>
                             <p>
                                 <i class="bi bi-person"></i> {{ listing.donor.username }}<br>
-                                {% if listing.donor.phone %}
-                                <i class="bi bi-telephone"></i> {{ listing.donor.phone }}<br>
+                                {% if listing.donor.donor_profile and listing.donor.donor_profile.phone %}
+                                <i class="bi bi-telephone"></i> {{ listing.donor.donor_profile.phone }}<br>
                                 {% endif %}
                                 <i class="bi bi-envelope"></i> {{ listing.donor.email }}
                             </p>

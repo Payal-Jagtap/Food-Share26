@@ -13,7 +13,7 @@
                 <p class="text-center text-muted mb-4">Choose your role to continue</p>
                 <div id="roleSelection" class="row mb-4">
                     <div class="col-md-6 mb-3">
-                        <div class="card-role" data-role="donor">
+                        <div class="card-role" data-role="donor" role="button" tabindex="0">
                             <div class="card h-100 border-success text-center p-4">
                                 <i class="bi bi-building display-6 text-success mb-3"></i>
                                 <h5 class="card-title text-dark">Donor</h5>
@@ -22,7 +22,7 @@
                         </div>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <div class="card-role" data-role="ngo">
+                        <div class="card-role" data-role="ngo" role="button" tabindex="0">
                             <div class="card h-100 border-warning text-center p-4">
                                 <i class="bi bi-people display-6 text-warning mb-3"></i>
                                 <h5 class="card-title text-dark">NGO</h5>
@@ -99,9 +99,18 @@
                     if (roleSelection) roleSelection.style.display = 'none';
                     const note = document.querySelector('#loginForm p strong');
                     if (note) note.textContent = 'Logging in as ' + role.charAt(0).toUpperCase() + role.slice(1);
-                    // focus email
                     const email = document.getElementById('email');
                     if (email) email.focus();
+
+                    roleCards.forEach(c => c.classList.remove('selected'));
+                    this.classList.add('selected');
+                });
+
+                card.addEventListener('keydown', function(event){
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        this.click();
+                    }
                 });
             });
         }
@@ -114,8 +123,29 @@
                 if (hiddenRole) hiddenRole.value = urlRole;
                 if (loginForm) loginForm.style.display = 'block';
                 if (roleSelection) roleSelection.style.display = 'none';
+                const targetCard = document.querySelector('.card-role[data-role="' + urlRole + '"]');
+                if (targetCard) {
+                    targetCard.classList.add('selected');
+                }
             }
         });
     })();
 </script>
+<style>
+.card-role {
+    cursor: pointer;
+}
+.card-role .card {
+    transition: all 0.25s ease;
+}
+.card-role:hover .card {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.card-role.selected .card {
+    border-width: 3px !important;
+    border-color: #28a745 !important;
+    box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.16);
+}
+</style>
 {% endblock %}

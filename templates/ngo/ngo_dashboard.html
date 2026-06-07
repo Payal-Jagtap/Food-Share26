@@ -6,7 +6,7 @@
 <div class="row mb-4">
     <div class="col-md-12">
         <h1 class="h2">NGO Dashboard</h1>
-        <p class="text-muted">Welcome, {{ current_user.organization or current_user.username }}!</p>
+        <p class="text-muted">Welcome, {{ current_user.ngo_profile.organization if current_user.ngo_profile else current_user.username }}!</p>
     </div>
 </div>
 
@@ -149,7 +149,7 @@
                             {% for claim in my_claims %}
                             <tr>
                                 <td>{{ claim.food_listing.title }}</td>
-                                <td>{{ claim.food_listing.donor.organization or claim.food_listing.donor.username }}</td>
+                                <td>{{ claim.food_listing.donor.donor_profile.organization if claim.food_listing.donor.donor_profile else claim.food_listing.donor.username }}</td>
                                 <td>{{ claim.created_at.strftime('%b %d, %I:%M %p') }}</td>
                                 <td>{{ claim.food_listing.pickup_end.strftime('%I:%M %p') }}</td>
                                 <td>

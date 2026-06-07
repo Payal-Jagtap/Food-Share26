@@ -111,9 +111,9 @@
                     <label class="form-label fw-bold">Who are you reviewing?</label>
                     <div class="alert alert-info">
                         {% if current_user.id == claim.food_listing.donor_id %}
-                            <i class="bi bi-building"></i> <strong>{{ claim.ngo.organization or claim.ngo.username }}</strong> (NGO)
+                            <i class="bi bi-building"></i> <strong>{{ claim.ngo.ngo_profile.organization if claim.ngo.ngo_profile else claim.ngo.username }}</strong> (NGO)
                         {% else %}
-                            <i class="bi bi-person"></i> <strong>{{ claim.food_listing.donor.organization or claim.food_listing.donor.username }}</strong> (Donor)
+                            <i class="bi bi-person"></i> <strong>{{ claim.food_listing.donor.donor_profile.organization if claim.food_listing.donor.donor_profile else claim.food_listing.donor.username }}</strong> (Donor)
                         {% endif %}
                     </div>
                 </div>

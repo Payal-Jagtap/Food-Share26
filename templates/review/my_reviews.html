@@ -243,7 +243,7 @@
                             </div>
                             <div>
                                 <h5 class="mb-1">
-                                    Review of {{ review.to_user.organization or review.to_user.username }}
+                                    Review of {{ review.to_user.donor_profile.organization if review.to_user.donor_profile else (review.to_user.ngo_profile.organization if review.to_user.ngo_profile else review.to_user.username) }}
                                     {% if review.to_user.role == 'ngo' %}
                                         <span class="review-type-badge donor-to-ngo">NGO</span>
                                     {% else %}
@@ -310,7 +310,7 @@
                             </div>
                             <div>
                                 <h5 class="mb-1">
-                                    Review from {{ review.from_user.organization or review.from_user.username }}
+                                    Review from {{ review.from_user.donor_profile.organization if review.from_user.donor_profile else (review.from_user.ngo_profile.organization if review.from_user.ngo_profile else review.from_user.username) }}
                                     {% if review.from_user.role == 'donor' %}
                                         <span class="review-type-badge donor-to-ngo">Donor</span>
                                     {% else %}

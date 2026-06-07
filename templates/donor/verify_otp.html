@@ -22,7 +22,7 @@
                         </div>
                         <div class="col-6">
                             <strong>Claimed By:</strong><br>
-                            {{ claim.receiver.organization or claim.receiver.username }}
+                            {{ claim.receiver.ngo_profile.organization if claim.receiver.ngo_profile else claim.receiver.username }}
                         </div>
                     </div>
                     <div class="row mt-2">
@@ -63,7 +63,7 @@
                 {% endif %}
 
                 <!-- Time Warning -->
-                {% set time_remaining = (claim.created_at + timedelta(hours=2) - datetime.utcnow()).total_seconds() %}
+                {% set time_remaining = (claim.created_at + timedelta(minutes=2) - datetime.utcnow()).total_seconds() %}
                 {% if time_remaining > 0 %}
                 <div class="alert alert-success mb-4">
                     <i class="bi bi-clock"></i>
@@ -108,7 +108,7 @@
                     <a href="{{ url_for('donor_dashboard') }}" class="btn btn-secondary">
                         <i class="bi bi-arrow-left"></i> Back to Dashboard
                     </a>
-                    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#contactModal">
+                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#contactModal">
                         <i class="bi bi-telephone"></i> Contact NGO
                     </button>
                 </div>
@@ -119,7 +119,7 @@
 
 <!-- Contact Modal -->
 <div class="modal fade" id="contactModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Contact NGO</h5>
@@ -127,11 +127,11 @@
             </div>
             <div class="modal-body">
                 <h6>NGO Information</h6>
-                <p><strong>Organization:</strong> {{ claim.receiver.organization or claim.receiver.username }}</p>
+                <p><strong>Organization:</strong> {{ claim.receiver.ngo_profile.organization if claim.receiver.ngo_profile else claim.receiver.username }}</p>
                 <p><strong>Contact Person:</strong> {{ claim.receiver.username }}</p>
                 <p><strong>Email:</strong> {{ claim.receiver.email }}</p>
-                {% if claim.receiver.phone %}
-                <p><strong>Phone:</strong> {{ claim.receiver.phone }}</p>
+                {% if claim.receiver.ngo_profile and claim.receiver.ngo_profile.phone %}
+                <p><strong>Phone:</strong> {{ claim.receiver.ngo_profile.phone }}</p>
                 {% endif %}
                 
                 <hr>

@@ -286,7 +286,7 @@
     <div class="user-card {{ 'active' if user.is_active else 'banned' }}" 
          data-role="{{ user.role }}" 
          data-status="{{ 'active' if user.is_active else 'banned' }}"
-         data-search="{{ user.username.lower() }} {{ user.email.lower() }} {{ (user.organization or '').lower() }}">
+         data-search="{{ user.username.lower() }} {{ user.email.lower() }} {{ (user.donor_profile.organization if user.donor_profile else (user.ngo_profile.organization if user.ngo_profile else '')).lower() }}">
         
         <div class="user-header">
             <div class="user-info">
@@ -294,7 +294,7 @@
                     {{ (user.username)[0].upper() }}
                 </div>
                 <div class="user-details">
-                    <h4>{{ user.organization or user.username }}</h4>
+                    <h4>{{ user.donor_profile.organization if user.donor_profile else (user.ngo_profile.organization if user.ngo_profile else user.username) }}</h4>
                     <div class="email">{{ user.email }}</div>
                     <span class="role {{ user.role }}">{{ user.role }}</span>
                 </div>

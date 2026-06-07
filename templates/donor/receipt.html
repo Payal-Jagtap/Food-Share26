@@ -278,7 +278,7 @@
                 <h3>🏢 Organization Information</h3>
                 <div class="detail-row">
                     <span class="detail-label">Organization:</span>
-                    <span class="detail-value">{{ claim.ngo.organization or claim.ngo.username }}</span>
+                    <span class="detail-value">{{ claim.ngo.ngo_profile.organization if claim.ngo.ngo_profile else claim.ngo.username }}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Contact Email:</span>

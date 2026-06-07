@@ -41,6 +41,14 @@ body {
     padding: 0.5rem 1.5rem;
 }
 
+.btn:hover {
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.btn-group .btn:hover {
+    transform: none;
+}
+
 .btn-success {
     background-color: var(--primary-green);
     border-color: var(--primary-green);
@@ -163,6 +171,20 @@ body {
     .navbar, .footer, .no-print {
         display: none !important;
     }
+}
+
+/* Modal Overlay Fix */
+.modal {
+    z-index: 1100;
+}
+
+.modal-backdrop {
+    z-index: 1050;
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-backdrop.show {
+    opacity: 0.35 !important;
 }
 
 /* Floating back-arrow removed */

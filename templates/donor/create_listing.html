@@ -69,7 +69,7 @@
                             <div class="input-group">
                                 <textarea class="form-control" id="pickup_address" name="pickup_address" 
                                           rows="2" placeholder="Full address for pickup..." required>{{ copy.pickup_address if copy else '' }}</textarea>
-                                <button type="button" class="btn btn-outline-secondary" onclick="getCurrentLocation()">
+                                <button type="button" class="btn btn-outline-secondary" onclick="getCurrentLocation(event)">
                                     <i class="bi bi-geo-alt"></i> GPS
                                 </button>
                             </div>
@@ -97,7 +97,7 @@
                             <h6><i class="bi bi-clock"></i> Automatic Pickup Schedule</h6>
                             <p class="mb-1"><strong>Start Time:</strong> {{ display_start }}</p>
                             <p class="mb-0"><strong>End Time:</strong> {{ display_end }}</p>
-                            <small class="text-muted">Pickup window is automatically set to 2 hours from now</small>
+                            <small class="text-muted">Pickup window is automatically set to 2 minutes from now</small>
                         </div>
                     </div>
                     
@@ -114,9 +114,9 @@
 
 <script>
     // GPS Location Function
-    function getCurrentLocation() {
+    function getCurrentLocation(event) {
         if (navigator.geolocation) {
-            const button = event.target;
+            const button = event.currentTarget;
             button.disabled = true;
             button.innerHTML = '<i class="bi bi-geo-alt"></i> Getting location...';
             
@@ -170,7 +170,7 @@
         // Auto-adjust end time when start time changes
         document.getElementById('pickup_start').addEventListener('change', function() {
             const startTime = new Date(this.value);
-            const endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000); // 2 hours later
+            const endTime = new Date(startTime.getTime() + 2 * 60 * 1000); // 2 minutes later
             document.getElementById('pickup_end').value = endTime.toISOString().slice(0, 16);
         });
     });

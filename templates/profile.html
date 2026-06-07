@@ -33,7 +33,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Organization (if NGO)</label>
-                        <input type="text" class="form-control" name="organization" value="{{ user.organization or '' }}">
+                        <input type="text" class="form-control" name="organization" value="{{ current_user.donor_profile.organization if current_user.role == 'donor' and current_user.donor_profile else (current_user.ngo_profile.organization if current_user.role == 'ngo' and current_user.ngo_profile else '') }}">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Address</label>

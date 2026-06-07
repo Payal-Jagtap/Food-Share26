@@ -49,7 +49,7 @@
                             <small class="text-muted">{{ claim.food_listing.quantity }} meals</small>
                         </td>
                         <td>
-                            <strong>{{ claim.receiver.organization or claim.receiver.username }}</strong><br>
+                            <strong>{{ claim.receiver.ngo_profile.organization if claim.receiver.ngo_profile else claim.receiver.username }}</strong><br>
                             <small class="text-muted">{{ claim.receiver.email }}</small>
                         </td>
                         <td>

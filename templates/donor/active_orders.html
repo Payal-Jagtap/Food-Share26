@@ -151,7 +151,7 @@
          data-claim-id="{{ claim.id }}"
          data-expiry="{{ minutes_left }}"
          data-status="{{ claim.status }}">
-        <div class="card h-100 order-card {% if hours_left < 2 %}urgent-order{% endif %}">
+        <div class="card h-100 order-card {% if minutes_left < 2 %}urgent-order{% endif %}">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span class="badge status-badge 
                     {% if claim.status == 'pending' %}bg-warning
@@ -175,7 +175,7 @@
                 <!-- NGO Information -->
                 <div class="ngo-info mb-3">
                     <h6 class="mb-2">
-                        <i class="bi bi-building"></i> {{ claim.ngo.organization or claim.ngo.username }}
+                        <i class="bi bi-building"></i> {{ claim.ngo.ngo_profile.organization if claim.ngo.ngo_profile else claim.ngo.username }}
                     </h6>
                     <p class="small mb-2">
                         <i class="bi bi-envelope"></i> {{ claim.ngo.email }}<br>
@@ -243,20 +243,20 @@
                 <!-- Action Buttons -->
                 <div class="d-grid gap-2">
                     {% if claim.status == 'pending' %}
-                    <button class="btn btn-info" onclick="confirmOrder({{ claim.id }})">
+                    <button type="button" class="btn btn-info" onclick="confirmOrder({{ claim.id }})">
                         <i class="bi bi-check2"></i> Confirm Pickup
                     </button>
                     {% elif claim.status == 'confirmed' %}
-                    <button class="btn btn-success" onclick="verifyPickup({{ claim.id }})">
+                    <button type="button" class="btn btn-success" onclick="verifyPickup({{ claim.id }})">
                         <i class="bi bi-shield-check"></i> Verify Pickup
                     </button>
                     {% endif %}
                     
-                    <button class="btn btn-outline-primary" onclick="contactNGO({{ claim.ngo.id }})">
+                    <button type="button" class="btn btn-outline-primary" onclick="contactNGO({{ claim.ngo.id }})">
                         <i class="bi bi-telephone"></i> Contact NGO
                     </button>
                     
-                    <button class="btn btn-outline-warning" onclick="rejectOrder({{ claim.id }})">
+                    <button type="button" class="btn btn-outline-warning" onclick="rejectOrder({{ claim.id }})">
                         <i class="bi bi-x-circle"></i> Cancel Order
                     </button>
                 </div>
@@ -285,7 +285,7 @@
 
 <!-- Contact NGO Modal -->
 <div class="modal fade" id="contactModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Contact NGO</h5>
@@ -418,7 +418,7 @@ function updateCountdowns() {
                 countdownElement.className = 'countdown';
                 if (timeDiff < 30 * 60 * 1000) { // Less than 30 minutes
                     countdownElement.classList.add('urgent');
-                } else if (timeDiff < 2 * 60 * 60 * 1000) { // Less than 2 hours
+                } else if (timeDiff < 2 * 60 * 1000) { // Less than 2 minutes
                     countdownElement.classList.add('warning');
                 } else {
                     countdownElement.classList.add('normal');
@@ -437,6 +437,11 @@ updateCountdowns(); // Initial call
 
 // Confirm order function
 function confirmOrder(claimId) {
+    if (!claimId || String(claimId).trim() === '') {
+        alert('Unable to confirm pickup: claim ID is missing. Please refresh the page and try again.');
+        console.error('Missing claimId for confirmOrder');
+        return;
+    }
     if (confirm('Are you sure you want to confirm this pickup? This will notify the NGO that you are ready.')) {
         fetch(`/claim/${claimId}/update_status`, {
             method: 'POST',
@@ -465,19 +470,37 @@ function confirmOrder(claimId) {
 
 // Verify pickup function
 function verifyPickup(claimId) {
+    if (!claimId || String(claimId).trim() === '') {
+        alert('Unable to verify pickup: claim ID is missing. Please refresh the page and try again.');
+        console.error('Missing claimId for verifyPickup');
+        return;
+    }
     currentClaimId = claimId;
+    const verifyForm = document.getElementById('verifyForm');
+    const verifyMessage = document.getElementById('verifyMessage');
+    if (verifyForm) verifyForm.reset();
+    if (verifyMessage) verifyMessage.innerHTML = '';
     const modal = new bootstrap.Modal(document.getElementById('verifyModal'));
-    document.getElementById('verifyForm').reset();
-    document.getElementById('verifyMessage').innerHTML = '';
     modal.show();
 }
 
 // Submit verification
 function submitVerification() {
-    const otp = document.getElementById('otpInput').value.trim();
-    const peopleServed = document.getElementById('peopleServed').value;
+    if (!currentClaimId || String(currentClaimId).trim() === '') {
+        alert('Unable to submit verification: claim ID is missing. Please refresh the page and try again.');
+        console.error('Missing currentClaimId for submitVerification');
+        return;
+    }
+    const otpInput = document.getElementById('otpInput');
+    const peopleServedInput = document.getElementById('peopleServed');
     const messageDiv = document.getElementById('verifyMessage');
-    
+    if (!otpInput || !messageDiv) {
+        alert('Verification form is not available. Please refresh the page and try again.');
+        console.error('Missing verification form elements');
+        return;
+    }
+    const otp = otpInput.value.trim();
+    const peopleServed = peopleServedInput ? peopleServedInput.value : null;
     if (!otp || otp.length !== 4 || !/^\d{4}$/.test(otp)) {
         messageDiv.innerHTML = '<div class="alert alert-danger">Please enter a valid 4-digit OTP.</div>';
         return;
@@ -522,19 +545,27 @@ function contactNGO(ngoId) {
     const modal = new bootstrap.Modal(document.getElementById('contactModal'));
     const modalBody = document.getElementById('contactModalBody');
     
-    modalBody.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
+    modalBody.innerHTML = '<div class="text-center py-4"><div class="spinner-border" role="status"></div></div>';
+    modal.show();
     
     fetch(`/api/user/${ngoId}/contact`)
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
+            const displayName = data.user.organization || data.user.username;
+            const phoneLine = data.user.phone ? '<i class="bi bi-telephone"></i> ' + data.user.phone + '<br>' : '<span class="text-muted">Phone not available</span><br>';
             modalBody.innerHTML = `
                 <div class="text-center">
-                    <h6>${data.user.organization || data.user.username}</h6>
+                    <h6>${displayName}</h6>
                     <p class="text-muted">NGO Contact Information</p>
                     <div class="mb-3">
                         <i class="bi bi-envelope"></i> ${data.user.email}<br>
-                        ${data.user.phone ? '<i class="bi bi-telephone"></i> ' + data.user.phone + '<br>' : ''}
+                        ${phoneLine}
                     </div>
                     <div class="alert alert-info">
                         <small>Feel free to contact the NGO to coordinate pickup details.</small>
@@ -542,7 +573,8 @@ function contactNGO(ngoId) {
                 </div>
             `;
         } else {
-            modalBody.innerHTML = '<div class="text-danger">Error loading contact information.</div>';
+            const errorMessage = data.error ? data.error : 'Error loading contact information.';
+            modalBody.innerHTML = `<div class="text-danger">${errorMessage}</div>`;
         }
     })
     .catch(error => {
@@ -555,6 +587,11 @@ function contactNGO(ngoId) {
 
 // Reject order function
 function rejectOrder(claimId) {
+    if (!claimId || String(claimId).trim() === '') {
+        alert('Unable to cancel order: claim ID is missing. Please refresh the page and try again.');
+        console.error('Missing claimId for rejectOrder');
+        return;
+    }
     if (confirm('Are you sure you want to cancel this pickup? The food will become available for other NGOs.')) {
         fetch(`/claim/${claimId}/reject`, {
             method: 'POST'

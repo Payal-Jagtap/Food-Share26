@@ -186,7 +186,7 @@
                         </div>
                         <div class="reviewer-details">
                             <h5>
-                                {{ review.from_user.organization or review.from_user.username }}
+                                {{ review.from_user.donor_profile.organization if review.from_user.donor_profile else (review.from_user.ngo_profile.organization if review.from_user.ngo_profile else review.from_user.username) }}
                                 {% if review.from_user.role == 'donor' %}
                                     <span class="review-type-badge donor-to-ngo">Donor → NGO</span>
                                 {% else %}
@@ -221,9 +221,9 @@
                             <i class="bi bi-person-check"></i> Reviewing: 
                             <strong>
                                 {% if review.from_user.id == claim.food_listing.donor_id %}
-                                    {{ claim.ngo.organization or claim.ngo.username }} (NGO)
+                                    {{ claim.ngo.ngo_profile.organization if claim.ngo.ngo_profile else claim.ngo.username }} (NGO)
                                 {% else %}
-                                    {{ claim.food_listing.donor.organization or claim.food_listing.donor.username }} (Donor)
+                                    {{ claim.food_listing.donor.donor_profile.organization if claim.food_listing.donor.donor_profile else claim.food_listing.donor.username }} (Donor)
                                 {% endif %}
                             </strong>
                         </small>

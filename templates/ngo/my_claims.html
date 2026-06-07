@@ -55,7 +55,7 @@
                                     <div>
                                         <h5 class="card-title">{{ claim.food_listing.title }}</h5>
                                         <p class="text-muted small mb-0">
-                                            <i class="bi bi-building"></i> {{ claim.food_listing.donor.organization or claim.food_listing.donor.username }}
+                                            <i class="bi bi-building"></i> {{ claim.food_listing.donor.donor_profile.organization if claim.food_listing.donor.donor_profile else claim.food_listing.donor.username }}
                                         </p>
                                     </div>
                                     <div>
@@ -88,7 +88,7 @@
                                     {% if claim.status in ['pending', 'confirmed'] %}
                                     <div class="alert alert-info small py-2">
                                         <i class="bi bi-clock"></i> 
-                                        <strong>OTP expires in 2 hours</strong> - Complete pickup before timeout
+                                        <strong>OTP expires in 2 minutes</strong> - Complete pickup before timeout
                                     </div>
                                     {% endif %}
                                     <button class="btn btn-outline-primary" data-bs-toggle="modal" 
@@ -116,11 +116,11 @@
                                 </div>
                                 <div class="modal-body">
                                     <h6>Donor Information</h6>
-                                    <p><strong>Organization:</strong> {{ claim.food_listing.donor.organization or claim.food_listing.donor.username }}</p>
+                                    <p><strong>Organization:</strong> {{ claim.food_listing.donor.donor_profile.organization if claim.food_listing.donor.donor_profile else claim.food_listing.donor.username }}</p>
                                     <p><strong>Contact Person:</strong> {{ claim.food_listing.donor.username }}</p>
                                     <p><strong>Email:</strong> {{ claim.food_listing.donor.email }}</p>
-                                    {% if claim.food_listing.donor.phone %}
-                                    <p><strong>Phone:</strong> {{ claim.food_listing.donor.phone }}</p>
+                                    {% if claim.food_listing.donor.donor_profile and claim.food_listing.donor.donor_profile.phone %}
+                                    <p><strong>Phone:</strong> {{ claim.food_listing.donor.donor_profile.phone }}</p>
                                     {% endif %}
                                     
                                     <hr>
@@ -173,7 +173,7 @@
                                 </div>
                                 <div class="modal-footer">
                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                    <button type="button" class="btn btn-warning" onclick="updateClaim('{{ claim.id }}')">Update</button>
+                                    <button type="button" class="btn btn-warning" onclick="updateClaim({{ claim.id or 0 }})">Update</button>
                                 </div>
                             </div>
                         </div>
@@ -219,13 +219,13 @@
                                     <strong>{{ claim.food_listing.title }}</strong><br>
                                     <small class="text-muted">{{ claim.food_listing.quantity }} meals</small>
                                 </td>
-                                <td>{{ claim.food_listing.donor.organization or claim.food_listing.donor.username }}</td>
+                                <td>{{ claim.food_listing.donor.donor_profile.organization if claim.food_listing.donor.donor_profile else claim.food_listing.donor.username }}</td>
                                 <td>{{ claim.created_at.strftime('%b %d, %I:%M %p') }}</td>
                                 <td>
                                     {{ claim.food_listing.pickup_end.strftime('%b %d, %I:%M %p') }}<br>
                                     <small class="text-warning">
-                                        {% set hours_left = ((claim.food_listing.pickup_end - datetime.utcnow()).total_seconds() / 3600)|round|int %}
-                                        {{ hours_left }} hours left
+                                        {% set minutes_left = ((claim.food_listing.pickup_end - datetime.utcnow()).total_seconds() / 60)|round|int %}
+                                        {{ minutes_left }} minutes left
                                     </small>
                                 </td>
                                 <td>
@@ -271,7 +271,7 @@
                             <div class="card-body">
                                 <h6 class="card-title">{{ claim.food_listing.title }}</h6>
                                 <p class="text-muted small">
-                                    <i class="bi bi-building"></i> {{ claim.food_listing.donor.organization }}
+                                    <i class="bi bi-building"></i> {{ claim.food_listing.donor.donor_profile.organization if claim.food_listing.donor.donor_profile else claim.food_listing.donor.username }}
                                 </p>
                                 
                                 <div class="mb-3">
@@ -304,7 +304,7 @@
                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                 </div>
                                 <div class="modal-body">
-                                    <p>Rate your experience with <strong>{{ claim.food_listing.donor.organization or claim.food_listing.donor.username }}</strong></p>
+                                    <p>Rate your experience with <strong>{{ claim.food_listing.donor.donor_profile.organization if claim.food_listing.donor.donor_profile else claim.food_listing.donor.username }}</strong></p>
                                     <form id="reviewForm{{ claim.id }}">
                                         <div class="mb-3 text-center">
                                             <div class="star-rating">
@@ -396,7 +396,7 @@
                             {% for claim in claims %}
                             <tr>
                                 <td>{{ claim.food_listing.title }}</td>
-                                <td>{{ claim.food_listing.donor.organization or claim.food_listing.donor.username }}</td>
+                                <td>{{ claim.food_listing.donor.donor_profile.organization if claim.food_listing.donor.donor_profile else claim.food_listing.donor.username }}</td>
                                 <td>
                                     <span class="badge bg-{{ 
                                         'warning' if claim.status == 'pending' 
@@ -478,7 +478,17 @@
     });
 
     function updateClaim(claimId) {
+        if (!claimId || String(claimId).trim() === '') {
+            alert('Unable to update claim: claim ID is missing. Please refresh the page and try again.');
+            console.error('Missing claimId for updateClaim');
+            return;
+        }
         const form = document.getElementById('updateForm' + claimId);
+        if (!form) {
+            alert('Update form not found for this claim. Please refresh the page and try again.');
+            console.error('Missing update form for claimId', claimId);
+            return;
+        }
         const formData = new FormData(form);
         const data = Object.fromEntries(formData);
         

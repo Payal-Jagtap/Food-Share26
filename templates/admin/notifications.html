@@ -52,8 +52,10 @@
                         <td>
                             <strong>{{ notification.user.username }}</strong><br>
                             <small class="text-muted">{{ notification.user.email }}</small>
-                            {% if notification.user.organization %}
-                                <br><small class="text-info">{{ notification.user.organization }}</small>
+                            {% if notification.user.donor_profile and notification.user.donor_profile.organization %}
+                                <br><small class="text-info">{{ notification.user.donor_profile.organization }}</small>
+                            {% elif notification.user.ngo_profile and notification.user.ngo_profile.organization %}
+                                <br><small class="text-info">{{ notification.user.ngo_profile.organization }}</small>
                             {% endif %}
                         </td>
                         <td>

@@ -15,7 +15,7 @@
                     {% if not request.args.get('role') %}
                     <div class="row mb-4">
                         <div class="col-md-6 mb-3">
-                            <div class="form-check card-role" data-role="donor">
+                            <div class="form-check card-role" data-role="donor" role="button" tabindex="0">
                                 <div class="card h-100 border-success text-center">
                                     <div class="card-body">
                                         <i class="bi bi-building display-6 text-success mb-3"></i>
@@ -28,7 +28,7 @@
                             </div>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <div class="form-check card-role" data-role="ngo">
+                            <div class="form-check card-role" data-role="ngo" role="button" tabindex="0">
                                 <div class="card h-100 border-warning text-center">
                                     <div class="card-body">
                                         <i class="bi bi-people display-6 text-warning mb-3"></i>
@@ -133,30 +133,21 @@
                 // Update radio button
                 const radio = this.querySelector('input[type="radio"]');
                 if (radio) radio.checked = true;
+                cardRoles.forEach(c => c.classList.remove('selected'));
+                this.classList.add('selected');
             });
-        });
-    }
-    
-    // Initialize based on URL parameter (guard for missing elements)
-    document.addEventListener('DOMContentLoaded', function() {
-        const urlRole = new URLSearchParams(window.location.search).get('role');
-        if (urlRole) {
-            const orgField = document.getElementById('organizationField');
-            if (orgField) {
-                if (urlRole === 'ngo') {
-                    orgField.style.display = 'block';
-                    const orgInput = document.getElementById('organization');
-                    if (orgInput) orgInput.required = true;
-                } else {
-                    orgField.style.display = 'none';
-                    const orgInput = document.getElementById('organization');
-                    if (orgInput) orgInput.required = false;
-                }
-            }
 
-            // If role cards exist, try to select the matching card
+            card.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    this.click();
+                }
+            });
             const targetCard = document.querySelector('.card-role[data-role="' + urlRole + '"]');
-            if (targetCard) targetCard.click();
+            if (targetCard) {
+                targetCard.click();
+                targetCard.classList.add('selected');
+            }
         }
     });
 </script>
@@ -175,8 +166,9 @@
     opacity: 0;
 }
 
-.card-role input[type="radio"]:checked + .card {
-    border-width: 3px;
+.card-role.selected .card {
+    border-width: 3px !important;
+    border-color: #28a745 !important;
     box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.25);
 }
 

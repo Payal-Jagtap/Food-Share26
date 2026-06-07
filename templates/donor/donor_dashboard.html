@@ -6,7 +6,7 @@
 <div class="row mb-4">
     <div class="col-md-12">
         <h1 class="h2">Donor Dashboard</h1>
-        <p class="text-muted">Welcome, {{ current_user.organization or current_user.username }}!</p>
+        <p class="text-muted">Welcome, {{ current_user.donor_profile.organization if current_user.donor_profile else current_user.username }}!</p>
     </div>
 </div>
 
@@ -160,7 +160,7 @@
                             {% for claim in claims[:5] %}
                             <tr>
                                 <td>{{ claim.food_listing.title }}</td>
-                                <td>{{ claim.receiver.organization or claim.receiver.username }}</td>
+                                <td>{{ claim.receiver.ngo_profile.organization if claim.receiver.ngo_profile else claim.receiver.username }}</td>
                                 <td>{{ claim.created_at.strftime('%b %d, %I:%M %p') }}</td>
                                 <td>
                                     <span class="badge bg-{{ 
@@ -214,11 +214,11 @@
                                         </div>
                                         <div class="modal-body">
                                             <h6>Receiver Information</h6>
-                                            <p><strong>Organization:</strong> {{ claim.receiver.organization or claim.receiver.username }}</p>
+                                            <p><strong>Organization:</strong> {{ claim.receiver.ngo_profile.organization if claim.receiver.ngo_profile else claim.receiver.username }}</p>
                                             <p><strong>Contact Person:</strong> {{ claim.receiver.username }}</p>
                                             <p><strong>Email:</strong> {{ claim.receiver.email }}</p>
-                                            {% if claim.receiver.phone %}
-                                            <p><strong>Phone:</strong> {{ claim.receiver.phone }}</p>
+                                            {% if claim.receiver.ngo_profile and claim.receiver.ngo_profile.phone %}
+                                            <p><strong>Phone:</strong> {{ claim.receiver.ngo_profile.phone }}</p>
                                             {% endif %}
                                             
                                             <hr>
@@ -273,7 +273,22 @@
 
 <script>
 function verifyOTP(claimId) {
-    const otp = document.getElementById('otpInput' + claimId).value;
+    if (!claimId || String(claimId).trim() === '') {
+        alert('Unable to verify OTP: claim ID is missing. Please refresh the page and try again.');
+        console.error('Missing claimId for verifyOTP');
+        return;
+    }
+    const otpInput = document.getElementById('otpInput' + claimId);
+    if (!otpInput) {
+        alert('OTP input not found. Please refresh the page and try again.');
+        console.error('Missing otpInput element for claimId', claimId);
+        return;
+    }
+    const otp = otpInput.value.trim();
+    if (!otp) {
+        alert('Please enter the OTP code.');
+        return;
+    }
     fetch('/claim/' + claimId + '/verify_otp', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -284,7 +299,7 @@ function verifyOTP(claimId) {
         if (data.success) {
             location.reload();
         } else {
-            alert('Invalid OTP');
+            alert(data.message || 'Invalid OTP');
         }
     });
 }
